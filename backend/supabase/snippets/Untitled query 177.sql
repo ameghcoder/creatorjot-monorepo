@@ -1,0 +1,2 @@
+-- SELECT * FROM pg_publication_tables WHERE pubname = 'supabase_realtime';
+-- ALTER PUBLICATION supabase_realtime ADD TABLE generation_queue;

@@ -1,0 +1,139 @@
+======================================================================
+  CREATORJOT — PRE-PUSH CHECKLIST
+  Run through this list before every git push
+======================================================================
+
+
+----------------------------------------------------------------------
+  1. SECRETS & ENVIRONMENT FILES
+----------------------------------------------------------------------
+[ ] No .env, .env.local, or any secret file is staged
+      → Run: git diff --cached --name-only | findstr ".env"
+[ ] No API keys, tokens, or passwords are hardcoded in source files
+[ ] railway.env.example is up-to-date if you added new env vars
+[ ] Supabase service key is NOT exposed in frontend code
+
+
+----------------------------------------------------------------------
+  2. DEPENDENCIES
+----------------------------------------------------------------------
+[ ] pnpm-lock.yaml is committed (run: pnpm install if changed)
+[ ] No node_modules/ folder is staged
+      → Run: git diff --cached --name-only | findstr "node_modules"
+[ ] New packages are added to the correct workspace
+      (frontend/package.json OR backend/package.json, not root)
+
+
+----------------------------------------------------------------------
+  3. BUILD CHECK — FRONTEND (Next.js)
+----------------------------------------------------------------------
+[ ] Frontend builds without errors
+      → Run: pnpm --filter frontend build
+[ ] No TypeScript errors
+      → Run: pnpm --filter frontend lint
+[ ] No console.log() left in production code (search & remove)
+[ ] No unused imports or dead code
+
+
+----------------------------------------------------------------------
+  4. BUILD CHECK — BACKEND
+----------------------------------------------------------------------
+[ ] Backend compiles without errors
+      → Run: pnpm --filter backend build
+[ ] TypeScript type-check passes
+      → Run: pnpm --filter backend type-check
+[ ] No console.log() left (use proper logger instead)
+
+
+----------------------------------------------------------------------
+  5. TESTS
+----------------------------------------------------------------------
+[ ] Frontend tests pass (if any)
+[ ] Backend tests pass
+      → Run: pnpm --filter backend test
+[ ] No skipped/focused tests committed (.only, .skip, xit, fdescribe)
+
+
+----------------------------------------------------------------------
+  6. DATABASE & SUPABASE
+----------------------------------------------------------------------
+[ ] New migrations are committed (backend/supabase/migrations/)
+[ ] Migration files have NOT been modified after being pushed before
+[ ] RPC functions are up-to-date if schema changed
+[ ] Row Level Security (RLS) policies are set for new tables
+[ ] .temp/ folder inside supabase is NOT staged
+
+
+----------------------------------------------------------------------
+  7. GIT HYGIENE
+----------------------------------------------------------------------
+[ ] You are on the correct branch (not pushing to main accidentally)
+      → Run: git branch --show-current
+[ ] Commit messages are clear and descriptive
+[ ] No merge conflict markers (<<<<<<<) left in files
+      → Run: git diff --cached | findstr "<<<<<<"
+[ ] .gitignore is up to date for any new generated files
+[ ] No large files staged (images, videos, zips, lock file copies)
+      → Run: git diff --cached --stat
+[ ] archive/ folder is NOT staged (old/unused code)
+
+
+----------------------------------------------------------------------
+  8. DEPLOYMENT CONFIG (Railway)
+----------------------------------------------------------------------
+[ ] railway.json is correct if services/config changed
+[ ] railway.toml is correct if build commands changed
+[ ] nixpacks.toml is correct if system deps changed
+[ ] All required Railway env vars are set in the dashboard
+      (compare with railway.env.example)
+
+
+----------------------------------------------------------------------
+  9. SECURITY
+----------------------------------------------------------------------
+[ ] No .pem, .key, .cert, or .crt files are staged
+[ ] CORS origins are set correctly (not wildcard * in production)
+[ ] API routes have proper authentication checks
+[ ] Rate limiting is configured for public endpoints
+[ ] No sensitive data logged in worker/server output
+
+
+----------------------------------------------------------------------
+  10. FIRST-TIME PUSH ONLY
+----------------------------------------------------------------------
+[ ] README.md exists and describes the project
+[ ] .gitignore is comprehensive (run: git status — nothing unexpected)
+[ ] License file is present (if open source)
+[ ] Example env files are committed (.env.example / railway.env.example)
+[ ] Supabase project is set up and migrations are applied
+[ ] Railway services are created and linked
+[ ] Dodo Payments webhook URL is configured for production
+[ ] Domain/DNS is configured if using custom domain
+
+
+----------------------------------------------------------------------
+  QUICK COMMANDS REFERENCE
+----------------------------------------------------------------------
+  # Check what's staged
+  git diff --cached --name-only
+
+  # Search for secrets in staged files
+  git diff --cached | findstr /i "api_key secret password token"
+
+  # Full build check
+  pnpm --filter frontend build
+  pnpm --filter backend build
+
+  # Run all tests
+  pnpm --filter backend test
+
+  # Check branch
+  git branch --show-current
+
+  # Dry-run push (see what would be pushed)
+  git push --dry-run
+
+======================================================================
+  ✓ All checks passed? You're good to push!
+  → git push origin <your-branch>
+======================================================================

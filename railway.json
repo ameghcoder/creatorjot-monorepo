@@ -1,0 +1,194 @@
+{
+    "$schema": "https://railway.app/railway.schema.json",
+    "services": {
+        "api": {
+            "name": "creatorjot-api",
+            "build": {
+                "builder": "NIXPACKS",
+                "buildCommand": "cd backend && npm install && npm run build",
+                "watchPatterns": [
+                    "backend/src/**/*.ts",
+                    "backend/package.json"
+                ]
+            },
+            "deploy": {
+                "startCommand": "cd backend && node dist/server.js",
+                "healthcheckPath": "/api/v1/health",
+                "healthcheckTimeout": 30,
+                "restartPolicyType": "ON_FAILURE",
+                "restartPolicyMaxRetries": 3,
+                "numReplicas": 2
+            },
+            "scaling": {
+                "minReplicas": 2,
+                "maxReplicas": 5,
+                "autoscaling": {
+                    "enabled": true,
+                    "targetCPU": 70,
+                    "targetMemory": 80
+                }
+            },
+            "env": {
+                "NODE_ENV": "production",
+                "SERVICE_TYPE": "api",
+                "LOG_LEVEL": "info"
+            },
+            "regions": [
+                "us-west1"
+            ]
+        },
+        "transcript-worker": {
+            "name": "creatorjot-transcript-worker",
+            "build": {
+                "builder": "NIXPACKS",
+                "buildCommand": "cd backend && npm install && npm run build",
+                "watchPatterns": [
+                    "backend/src/**/*.ts",
+                    "backend/package.json"
+                ]
+            },
+            "deploy": {
+                "startCommand": "cd backend && node dist/worker/run-transcript-worker.js",
+                "healthcheckPath": "/health",
+                "healthcheckTimeout": 30,
+                "restartPolicyType": "ON_FAILURE",
+                "restartPolicyMaxRetries": 3,
+                "numReplicas": 2
+            },
+            "scaling": {
+                "minReplicas": 2,
+                "maxReplicas": 5,
+                "autoscaling": {
+                    "enabled": true,
+                    "targetCPU": 75,
+                    "targetMemory": 85
+                }
+            },
+            "env": {
+                "NODE_ENV": "production",
+                "SERVICE_TYPE": "transcript-worker",
+                "LOG_LEVEL": "info"
+            },
+            "regions": [
+                "us-west1"
+            ]
+        },
+        "generation-worker": {
+            "name": "creatorjot-generation-worker",
+            "build": {
+                "builder": "NIXPACKS",
+                "buildCommand": "cd backend && npm install && npm run build",
+                "watchPatterns": [
+                    "backend/src/**/*.ts",
+                    "backend/package.json"
+                ]
+            },
+            "deploy": {
+                "startCommand": "cd backend && node dist/worker/run-generation-worker.js",
+                "healthcheckPath": "/health",
+                "healthcheckTimeout": 30,
+                "restartPolicyType": "ON_FAILURE",
+                "restartPolicyMaxRetries": 3,
+                "numReplicas": 2
+            },
+            "scaling": {
+                "minReplicas": 2,
+                "maxReplicas": 5,
+                "autoscaling": {
+                    "enabled": true,
+                    "targetCPU": 75,
+                    "targetMemory": 85
+                }
+            },
+            "env": {
+                "NODE_ENV": "production",
+                "SERVICE_TYPE": "generation-worker",
+                "LOG_LEVEL": "info"
+            },
+            "regions": [
+                "us-west1"
+            ]
+        },
+        "stuck-detector": {
+            "name": "creatorjot-stuck-detector",
+            "build": {
+                "builder": "NIXPACKS",
+                "buildCommand": "cd backend && npm install && npm run build",
+                "watchPatterns": [
+                    "backend/src/**/*.ts",
+                    "backend/package.json"
+                ]
+            },
+            "deploy": {
+                "startCommand": "cd backend && node dist/worker/run-stuck-detector.js",
+                "healthcheckPath": "/health",
+                "healthcheckTimeout": 30,
+                "restartPolicyType": "ON_FAILURE",
+                "restartPolicyMaxRetries": 3,
+                "numReplicas": 1
+            },
+            "scaling": {
+                "minReplicas": 1,
+                "maxReplicas": 1,
+                "autoscaling": {
+                    "enabled": false
+                }
+            },
+            "env": {
+                "NODE_ENV": "production",
+                "SERVICE_TYPE": "stuck-detector",
+                "LOG_LEVEL": "info"
+            },
+            "regions": [
+                "us-west1"
+            ]
+        }
+    },
+    "sharedEnv": {
+        "DATABASE_URL": "${{DATABASE_URL}}",
+        "SUPABASE_URL": "${{SUPABASE_URL}}",
+        "SUPABASE_ANON_KEY": "${{SUPABASE_ANON_KEY}}",
+        "SUPABASE_SERVICE_ROLE_KEY": "${{SUPABASE_SERVICE_ROLE_KEY}}",
+        "TRANSCRIPT_COM_API": "${{TRANSCRIPT_COM_API}}",
+        "GEMINI_API_KEY": "${{GEMINI_API_KEY}}",
+        "CLAUDE_API_KEY": "${{CLAUDE_API_KEY}}",
+        "RESEND_API_KEY": "${{RESEND_API_KEY}}",
+        "SENTRY_DSN": "${{SENTRY_DSN}}",
+        "FRONTEND_URL": "https://creatorjot.com",
+        "PGBOSS_SCHEMA": "pgboss",
+        "QUEUE_MAX_ATTEMPTS": "3",
+        "QUEUE_RETRY_DELAYS": "1000,5000,15000",
+        "QUEUE_PRIORITY_FREE": "25",
+        "QUEUE_PRIORITY_PAID": "75",
+        "QUEUE_STUCK_JOB_TIMEOUT_MINUTES": "5",
+        "QUEUE_STUCK_JOB_DETECTION_INTERVAL_SECONDS": "60",
+        "AI_DEFAULT_MODEL": "gemini",
+        "GEMINI_MODEL": "gemini-2.5-flash",
+        "CLAUDE_MODEL": "claude-3-5-sonnet-20241022",
+        "EMAIL_ENABLED": "false",
+        "EMAIL_FROM": "notifications@creatorjot.com",
+        "WEBSOCKET_ENABLED": "false"
+    },
+    "networking": {
+        "api": {
+            "publicDomain": true,
+            "internalPort": 3000
+        },
+        "transcript-worker": {
+            "publicDomain": false
+        },
+        "generation-worker": {
+            "publicDomain": false
+        },
+        "stuck-detector": {
+            "publicDomain": false
+        }
+    },
+    "deployment": {
+        "strategy": "rolling",
+        "maxSurge": 1,
+        "maxUnavailable": 0,
+        "progressDeadlineSeconds": 600,
+        "rollbackOnFailure": true
+    }
+}

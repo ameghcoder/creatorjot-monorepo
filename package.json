@@ -1,0 +1,15 @@
+{
+    "name": "creatorjot",
+    "private": true,
+    "scripts": {
+        "dev:frontend": "pnpm --filter frontend dev",
+        "dev:backend": "pnpm --filter backend dev",
+        "build:frontend": "pnpm --filter frontend build",
+        "build:backend": "pnpm --filter backend build",
+        "build": "pnpm build:backend && pnpm build:frontend",
+        "type-check": "pnpm --filter backend type-check && pnpm --filter frontend exec tsc --noEmit"
+    },
+    "devDependencies": {
+        "typescript": "^6.0.2"
+    }
+}
