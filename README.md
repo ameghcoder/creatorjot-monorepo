@@ -227,7 +227,12 @@ See `backend/.env.example` for the full list with defaults.
 
 ### How it works
 
-All 5 services deploy from the **same GitHub repository**. Railway runs `nixpacks.toml` at the repo root for the install phase (installs pnpm + all workspace deps), then each service runs its own `buildCommand` to compile only what it needs.
+All 5 services deploy from the **same GitHub repository**. Railway runs `nixpacks.toml` at the repo root which handles two things:
+
+1. **Install phase** — runs `pnpm install --frozen-lockfile` to install all workspace dependencies
+2. **Build phase** — runs `pnpm build:shared` to compile `@creatorjot/shared` into `dist/`
+
+After that, each service runs its own build command set in the Railway dashboard. Because nixpacks runs before the service build command, `@creatorjot/shared` is always compiled and available when the backend or frontend tries to import it.
 
 The `pnpm-lock.yaml` must be committed — Railway uses `--frozen-lockfile` during install.
 
@@ -238,7 +243,7 @@ The `pnpm-lock.yaml` must be committed — Railway uses `--frozen-lockfile` duri
 
 ### Step 2 — Create services
 
-Create **5 services** in Railway, all pointing to the same repo. For each service, set:
+Create **5 services** in Railway, all pointing to the same repo. For each service:
 
 **Root Directory:** `/` (repo root — do not change this)
 
@@ -288,6 +293,8 @@ Configure each service as follows:
 | Start Command | `node backend/dist/worker/run-stuck-detector.js` |
 | Health Check Path | `/health` |
 | Public Domain | No |
+
+> `pnpm build:shared` is a root-level script defined in `package.json` that runs `pnpm --filter @creatorjot/shared build`. The filter uses the package `name` field (`@creatorjot/shared`), not the folder name.
 
 ### Step 3 — Set environment variables
 
