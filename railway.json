@@ -4,8 +4,7 @@
         "frontend": {
             "name": "creatorjot-frontend",
             "build": {
-                "builder": "NIXPACKS",
-                "buildCommand": "pnpm --filter frontend build",
+                "buildCommand": "pnpm build:shared && pnpm --filter frontend build",
                 "watchPatterns": [
                     "frontend/src/**",
                     "frontend/package.json",
@@ -30,8 +29,7 @@
         "api": {
             "name": "creatorjot-api",
             "build": {
-                "builder": "NIXPACKS",
-                "buildCommand": "pnpm --filter backend build",
+                "buildCommand": "pnpm build:shared && pnpm --filter backend build",
                 "watchPatterns": [
                     "backend/src/**/*.ts",
                     "backend/package.json",
@@ -67,8 +65,7 @@
         "transcript-worker": {
             "name": "creatorjot-transcript-worker",
             "build": {
-                "builder": "NIXPACKS",
-                "buildCommand": "pnpm --filter backend build",
+                "buildCommand": "pnpm build:shared && pnpm --filter backend build",
                 "watchPatterns": [
                     "backend/src/**/*.ts",
                     "backend/package.json",
@@ -104,8 +101,7 @@
         "generation-worker": {
             "name": "creatorjot-generation-worker",
             "build": {
-                "builder": "NIXPACKS",
-                "buildCommand": "pnpm --filter backend build",
+                "buildCommand": "pnpm build:shared && pnpm --filter backend build",
                 "watchPatterns": [
                     "backend/src/**/*.ts",
                     "backend/package.json",
@@ -141,8 +137,7 @@
         "stuck-detector": {
             "name": "creatorjot-stuck-detector",
             "build": {
-                "builder": "NIXPACKS",
-                "buildCommand": "pnpm --filter backend build",
+                "buildCommand": "pnpm build:shared && pnpm --filter backend build",
                 "watchPatterns": [
                     "backend/src/**/*.ts",
                     "backend/package.json",

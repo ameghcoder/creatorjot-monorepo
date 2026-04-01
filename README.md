@@ -227,14 +227,11 @@ See `backend/.env.example` for the full list with defaults.
 
 ### How it works
 
-All 5 services deploy from the **same GitHub repository**. Railway runs `nixpacks.toml` at the repo root which handles two things:
+All 5 services deploy from the **same GitHub repository**. Railway uses **Railpack** (its auto-detected builder) which handles install automatically. The build command set per service in the Railway dashboard is what actually runs.
 
-1. **Install phase** — runs `pnpm install --frozen-lockfile` to install all workspace dependencies
-2. **Build phase** — runs `pnpm build:shared` to compile `@creatorjot/shared` into `dist/`
+**Critical:** `@creatorjot/shared` must be compiled before the backend or frontend, because both depend on its `dist/` output. The build commands below handle this by running `pnpm build:shared` first in the same command.
 
-After that, each service runs its own build command set in the Railway dashboard. Because nixpacks runs before the service build command, `@creatorjot/shared` is always compiled and available when the backend or frontend tries to import it.
-
-The `pnpm-lock.yaml` must be committed — Railway uses `--frozen-lockfile` during install.
+The `pnpm-lock.yaml` must be committed — Railpack uses `--frozen-lockfile` during install.
 
 ### Step 1 — Create a Railway project
 
@@ -253,7 +250,7 @@ Configure each service as follows:
 
 | Setting | Value |
 |---|---|
-| Build Command | `pnpm --filter frontend build` |
+| Build Command | `pnpm build:shared && pnpm --filter frontend build` |
 | Start Command | `pnpm --filter frontend start` |
 | Health Check Path | `/` |
 | Public Domain | Yes |
@@ -262,7 +259,7 @@ Configure each service as follows:
 
 | Setting | Value |
 |---|---|
-| Build Command | `pnpm --filter backend build` |
+| Build Command | `pnpm build:shared && pnpm --filter backend build` |
 | Start Command | `node backend/dist/server.js` |
 | Health Check Path | `/api/v1/health` |
 | Public Domain | Yes |
@@ -271,7 +268,7 @@ Configure each service as follows:
 
 | Setting | Value |
 |---|---|
-| Build Command | `pnpm --filter backend build` |
+| Build Command | `pnpm build:shared && pnpm --filter backend build` |
 | Start Command | `node backend/dist/worker/run-transcript-worker.js` |
 | Health Check Path | `/health` |
 | Public Domain | No |
@@ -280,7 +277,7 @@ Configure each service as follows:
 
 | Setting | Value |
 |---|---|
-| Build Command | `pnpm --filter backend build` |
+| Build Command | `pnpm build:shared && pnpm --filter backend build` |
 | Start Command | `node backend/dist/worker/run-generation-worker.js` |
 | Health Check Path | `/health` |
 | Public Domain | No |
@@ -289,12 +286,12 @@ Configure each service as follows:
 
 | Setting | Value |
 |---|---|
-| Build Command | `pnpm --filter backend build` |
+| Build Command | `pnpm build:shared && pnpm --filter backend build` |
 | Start Command | `node backend/dist/worker/run-stuck-detector.js` |
 | Health Check Path | `/health` |
 | Public Domain | No |
 
-> `pnpm build:shared` is a root-level script defined in `package.json` that runs `pnpm --filter @creatorjot/shared build`. The filter uses the package `name` field (`@creatorjot/shared`), not the folder name.
+> `pnpm build:shared` is a root-level script in `package.json` that runs `pnpm --filter @creatorjot/shared build`. The `--filter` flag matches on the package `name` field, not the folder name.
 
 ### Step 3 — Set environment variables
 

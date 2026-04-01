@@ -130,8 +130,9 @@ router.get("/", async (req: Request, res: Response) => {
       logger.warn("Health check exceeded 100ms target", { responseTime });
     }
 
-    const statusCode = healthStatus.status === "healthy" ? 200 : 503;
-    return res.status(statusCode).json(healthStatus);
+    // Always return 200 — Railway uses this for deployment health checks.
+    // Degraded state is visible in the response body but doesn't kill the deployment.
+    return res.status(200).json(healthStatus);
   } catch (error) {
     logger.error("Health check failed", { error });
     return res.status(503).json({

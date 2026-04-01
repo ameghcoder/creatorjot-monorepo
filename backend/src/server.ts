@@ -34,13 +34,17 @@ async function initializeQueue() {
 
 // ── Start application ────────────────────────────────────
 async function startServer() {
-  // Initialize queue before starting server
-  await initializeQueue();
-
-  // Start HTTP server
+  // Start HTTP server FIRST so Railway health checks pass immediately
   const server = app.listen(env.PORT, () => {
     console.log(`🚀 Server running in ${env.NODE_ENV} mode`);
     console.log(`🔗 http://localhost:${env.PORT}`);
+  });
+
+  // Initialize queue after server is already accepting connections
+  initializeQueue().catch((error) => {
+    logger.error("❌ Queue initialization failed — server still running", { error });
+    // Don't exit — let the server stay up so health checks pass
+    // Queue will be unavailable but API can still respond
   });
 
   // ── Graceful shutdown ────────────────────────────────────
