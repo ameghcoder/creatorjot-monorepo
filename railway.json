@@ -1,18 +1,45 @@
 {
     "$schema": "https://railway.app/railway.schema.json",
     "services": {
+        "frontend": {
+            "name": "creatorjot-frontend",
+            "build": {
+                "builder": "NIXPACKS",
+                "buildCommand": "pnpm --filter frontend build",
+                "watchPatterns": [
+                    "frontend/src/**",
+                    "frontend/package.json",
+                    "packages/**"
+                ]
+            },
+            "deploy": {
+                "startCommand": "pnpm --filter frontend start",
+                "healthcheckPath": "/",
+                "healthcheckTimeout": 30,
+                "restartPolicyType": "ON_FAILURE",
+                "restartPolicyMaxRetries": 3,
+                "numReplicas": 1
+            },
+            "env": {
+                "NODE_ENV": "production"
+            },
+            "regions": [
+                "us-west1"
+            ]
+        },
         "api": {
             "name": "creatorjot-api",
             "build": {
                 "builder": "NIXPACKS",
-                "buildCommand": "cd backend && npm install && npm run build",
+                "buildCommand": "pnpm --filter backend build",
                 "watchPatterns": [
                     "backend/src/**/*.ts",
-                    "backend/package.json"
+                    "backend/package.json",
+                    "packages/**"
                 ]
             },
             "deploy": {
-                "startCommand": "cd backend && node dist/server.js",
+                "startCommand": "node backend/dist/server.js",
                 "healthcheckPath": "/api/v1/health",
                 "healthcheckTimeout": 30,
                 "restartPolicyType": "ON_FAILURE",
@@ -41,14 +68,15 @@
             "name": "creatorjot-transcript-worker",
             "build": {
                 "builder": "NIXPACKS",
-                "buildCommand": "cd backend && npm install && npm run build",
+                "buildCommand": "pnpm --filter backend build",
                 "watchPatterns": [
                     "backend/src/**/*.ts",
-                    "backend/package.json"
+                    "backend/package.json",
+                    "packages/**"
                 ]
             },
             "deploy": {
-                "startCommand": "cd backend && node dist/worker/run-transcript-worker.js",
+                "startCommand": "node backend/dist/worker/run-transcript-worker.js",
                 "healthcheckPath": "/health",
                 "healthcheckTimeout": 30,
                 "restartPolicyType": "ON_FAILURE",
@@ -77,14 +105,15 @@
             "name": "creatorjot-generation-worker",
             "build": {
                 "builder": "NIXPACKS",
-                "buildCommand": "cd backend && npm install && npm run build",
+                "buildCommand": "pnpm --filter backend build",
                 "watchPatterns": [
                     "backend/src/**/*.ts",
-                    "backend/package.json"
+                    "backend/package.json",
+                    "packages/**"
                 ]
             },
             "deploy": {
-                "startCommand": "cd backend && node dist/worker/run-generation-worker.js",
+                "startCommand": "node backend/dist/worker/run-generation-worker.js",
                 "healthcheckPath": "/health",
                 "healthcheckTimeout": 30,
                 "restartPolicyType": "ON_FAILURE",
@@ -113,14 +142,15 @@
             "name": "creatorjot-stuck-detector",
             "build": {
                 "builder": "NIXPACKS",
-                "buildCommand": "cd backend && npm install && npm run build",
+                "buildCommand": "pnpm --filter backend build",
                 "watchPatterns": [
                     "backend/src/**/*.ts",
-                    "backend/package.json"
+                    "backend/package.json",
+                    "packages/**"
                 ]
             },
             "deploy": {
-                "startCommand": "cd backend && node dist/worker/run-stuck-detector.js",
+                "startCommand": "node backend/dist/worker/run-stuck-detector.js",
                 "healthcheckPath": "/health",
                 "healthcheckTimeout": 30,
                 "restartPolicyType": "ON_FAILURE",
@@ -170,6 +200,10 @@
         "WEBSOCKET_ENABLED": "false"
     },
     "networking": {
+        "frontend": {
+            "publicDomain": true,
+            "internalPort": 3000
+        },
         "api": {
             "publicDomain": true,
             "internalPort": 3000
