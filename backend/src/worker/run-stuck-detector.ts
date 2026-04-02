@@ -94,8 +94,8 @@ async function detectAndResetStuckJobs(
 async function main() {
   logger.info("Stuck job detector starting", { timeoutMinutes: STUCK_TIMEOUT_MINUTES });
 
-  // Start health server so Railway health checks pass
-  startHealthServer("stuck-detector", 3004);
+  // Start health server on Railway's assigned PORT
+  startHealthServer("stuck-detector");
   setHealthStatus(true);
 
   const intervalMs = env.QUEUE_STUCK_JOB_DETECTION_INTERVAL_SECONDS * 1000;

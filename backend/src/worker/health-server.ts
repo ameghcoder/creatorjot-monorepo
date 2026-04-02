@@ -8,9 +8,9 @@ import { env } from '../utils/env.js';
  * a minimal health check endpoint for Railway's monitoring
  */
 
-// Fallback port when no explicit portNumber is passed to startHealthServer.
-// Do NOT use process.env.PORT here — that's reserved for the API server.
-const DEFAULT_HEALTH_PORT = env.HEALTH_CHECK_PORT || 3001;
+// On Railway, PORT is injected per-service and is what Railway probes for health checks.
+// Fall back to HEALTH_CHECK_PORT for local dev, then 3001.
+const DEFAULT_HEALTH_PORT = Number(process.env.PORT) || env.HEALTH_CHECK_PORT || 3001;
 
 interface HealthStatus {
   status: 'healthy' | 'unhealthy';

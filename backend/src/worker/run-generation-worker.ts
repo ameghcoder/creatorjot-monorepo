@@ -30,8 +30,8 @@ async function main() {
   try {
     logger.info("Starting Generation Worker process");
 
-    // Start health check server for Railway
-    startHealthServer("generation-worker", 3004);
+    // Start health check server on Railway's assigned PORT
+    startHealthServer("generation-worker");
 
     // Initialize queue manager
     await queueManager.initialize({

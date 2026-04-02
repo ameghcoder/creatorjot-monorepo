@@ -24,8 +24,8 @@ async function main() {
   try {
     logger.info("Starting Transcript Worker process");
 
-    // Start health check server for Railway
-    startHealthServer("transcript-worker", 3002);
+    // Start health check server on Railway's assigned PORT
+    startHealthServer("transcript-worker");
 
     // Initialize queue manager
     await queueManager.initialize({
