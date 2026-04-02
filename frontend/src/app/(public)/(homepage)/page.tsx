@@ -1,4 +1,8 @@
+'use client'
+
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { siX, siYoutube } from 'simple-icons'
 import {
@@ -37,6 +41,17 @@ import { OutputExamples } from '@/components/homepage/output-examples'
 /*  PAGE                                                              */
 /* ================================================================== */
 const Page = () => {
+    const router = useRouter()
+    const [heroUrl, setHeroUrl] = useState('')
+
+    function handleHeroGenerate() {
+        const url = heroUrl.trim()
+        if (url) {
+            router.push(`/auth/signup?url=${encodeURIComponent(url)}`)
+        } else {
+            router.push('/auth/signup')
+        }
+    }
 
     const audiences = [
         { icon: <Mic className="size-4" />, label: 'YouTubers' },
@@ -50,7 +65,7 @@ const Page = () => {
         { count: '5', label: 'Tweets', icon: <MessageSquareText className="size-3.5 text-foreground/50" /> },
         { count: '2', label: 'LinkedIn posts', icon: <Globe className="size-3.5 text-foreground/50" /> },
         { count: '3', label: 'Viral hooks', icon: <Flame className="size-3.5 text-foreground/50" /> },
-        { count: '1', label: 'Blog outline', icon: <FileText className="size-3.5 text-foreground/50" /> },
+        { count: '1', label: 'Email newsletter', icon: <FileText className="size-3.5 text-foreground/50" /> },
     ]
 
     return (
@@ -89,7 +104,7 @@ const Page = () => {
                         {/* Sub-headline */}
                         <Reveal delay={160}>
                             <p className="mx-auto max-w-lg text-center text-base leading-relaxed text-muted-foreground sm:text-lg">
-                                Paste a YouTube link and <strong className="text-foreground">CreatorJot</strong> instantly generates ready-to-post content for Twitter, LinkedIn, and blogs.
+                                Paste a YouTube link and <strong className="text-foreground">CreatorJot</strong> instantly generates ready-to-post content for X, LinkedIn, Facebook, email, and more.
                             </p>
                         </Reveal>
 
@@ -109,9 +124,13 @@ const Page = () => {
                                         icon={<Link2 className="size-5 text-muted-foreground/50" />}
                                         className="focus:bg-transparent! h-10 py-2 border-0 shadow-none focus-visible:ring-0 outline-none text-base sm:text-lg placeholder:text-muted-foreground/60 w-full bg-transparent"
                                         placeholder="Paste any YouTube video link..."
+                                        value={heroUrl}
+                                        onChange={(e) => setHeroUrl(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleHeroGenerate()}
                                     />
                                     <Button
                                         type="button"
+                                        onClick={handleHeroGenerate}
                                         className=" h-10 font-semibold bg-foreground text-background hover:bg-foreground/90 transition-all flex items-center gap-2 group/btn shrink-0"
                                         icon={<ArrowRight className="size-4 group-hover/btn:rotate-12 transition-transform" />}
                                         iconPosition='end'
@@ -213,17 +232,7 @@ const Page = () => {
                                         Most founders believe product is everything. But distribution decides survival. Here&apos;s my workflow 👇
                                     </p>
                                 </div>
-                                {/* Blog Preview */}
-                                <div className="rounded-lg border border-border bg-background p-3 space-y-2 relative z-10 transition-colors hover:border-foreground/20">
-                                    <div className="flex items-center gap-2">
-                                        <FileText className="size-3 text-emerald-500" />
-                                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Blog Summary</span>
-                                    </div>
-                                    <p className="text-xs text-foreground/80 leading-relaxed line-clamp-3">
-                                        # How to turn 1 video into 30 days of content
-                                        If you are spending hours rewriting...
-                                    </p>
-                                </div>
+                                {/* Blog Preview — removed: blog is not a supported platform */}
                             </ScaleCard>
                         </div>
                     </Reveal>
@@ -278,8 +287,8 @@ const Page = () => {
                             {[
                                 { count: '1', label: 'Twitter thread', icon: <SimpleIcons path={siX.path} className="size-3.5 fill-foreground/50" /> },
                                 { count: '2', label: 'LinkedIn posts', icon: <Globe className="size-3.5 text-foreground/50" /> },
-                                { count: '1', label: 'Blog article', icon: <FileText className="size-3.5 text-foreground/50" /> },
                                 { count: '3', label: 'Quote posts', icon: <MessageSquareText className="size-3.5 text-foreground/50" /> },
+                                { count: '1', label: 'Email newsletter', icon: <FileText className="size-3.5 text-foreground/50" /> },
                                 { count: '5', label: 'Content ideas', icon: <Lightbulb className="size-3.5 text-foreground/50" /> },
                             ].map((item, i) => (
                                 <Reveal key={item.label} delay={150 + i * 60}>
@@ -636,7 +645,7 @@ const Page = () => {
                                 Start Turning Videos Into Content
                             </h2>
                             <p className="mx-auto max-w-md text-sm leading-relaxed text-muted-foreground">
-                                Paste a YouTube link and get Twitter threads, LinkedIn posts, and blog drafts in seconds. No prompting, no rewriting.
+                                Paste a YouTube link and get X threads, LinkedIn posts, and more in seconds. No prompting, no rewriting.
                             </p>
                             <Link href="/auth/signup">
                                 <Button

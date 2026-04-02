@@ -12,24 +12,32 @@ initSentry();
 
 // ── Initialize Queue Manager ─────────────────────────────
 async function initializeQueue() {
-  try {
-    
-    await queueManager.initialize({
-      connectionString: env.DATABASE_URL,
-      schema: env.PGBOSS_SCHEMA,
-      retryLimit: env.QUEUE_MAX_ATTEMPTS,
-      retryDelay: env.QUEUE_RETRY_DELAYS[0],
-      retryBackoff: true,
-      expireInSeconds: env.PGBOSS_EXPIRE_IN_SECONDS,
-      retentionDays: env.PGBOSS_RETENTION_DAYS,
-      maintenanceIntervalSeconds: env.PGBOSS_MAINTENANCE_INTERVAL_SECONDS,
-      deleteAfterDays: env.PGBOSS_DELETE_AFTER_DAYS,
-    });
-    logger.info("✅ Queue system initialized successfully");
-  } catch (error) {
-    logger.error("❌ Failed to initialize queue system", { error });
-    throw error;
+  const maxRetries = 5;
+  const retryDelayMs = 3000;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await queueManager.initialize({
+        connectionString: env.DATABASE_URL,
+        schema: env.PGBOSS_SCHEMA,
+        retryLimit: env.QUEUE_MAX_ATTEMPTS,
+        retryDelay: env.QUEUE_RETRY_DELAYS[0],
+        retryBackoff: true,
+        expireInSeconds: env.PGBOSS_EXPIRE_IN_SECONDS,
+        retentionDays: env.PGBOSS_RETENTION_DAYS,
+        maintenanceIntervalSeconds: env.PGBOSS_MAINTENANCE_INTERVAL_SECONDS,
+        deleteAfterDays: env.PGBOSS_DELETE_AFTER_DAYS,
+      });
+      logger.info("✅ Queue system initialized successfully");
+      return;
+    } catch (error) {
+      logger.error(`❌ Queue init attempt ${attempt}/${maxRetries} failed`, { error });
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, retryDelayMs));
+      }
+    }
   }
+  logger.error("❌ Queue initialization failed after all retries — jobs will not be processed");
 }
 
 // ── Start application ────────────────────────────────────

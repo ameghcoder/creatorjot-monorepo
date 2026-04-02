@@ -1,6 +1,8 @@
 'use server'
 
 import { supabaseAdminClient } from '@/server/supabase/supabase-admin'
+import { Resend } from 'resend'
+import { welcomeEmail } from '@/lib/email-templates'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -195,6 +197,24 @@ export async function onNewUserSignup(email: string, userId: string): Promise<vo
                 },
                 { onConflict: 'email' }
             )
+
+        // Send welcome email (fire-and-forget)
+        const resendKey = process.env.RESEND_API_KEY
+        if (resendKey) {
+            const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('full_name')
+                .eq('user_id', userId)
+                .single()
+            const name = profile?.full_name?.split(' ')[0] ?? email.split('@')[0]
+            const resend = new Resend(resendKey)
+            await resend.emails.send({
+                from: process.env.EMAIL_FROM ?? 'CreatorJot <notifications@creatorjot.com>',
+                to: email,
+                subject: 'Welcome to CreatorJot 👋',
+                html: welcomeEmail({ name }),
+            }).catch(() => {}) // never block signup
+        }
     } catch (err) {
         // Never throw — must not block the OAuth redirect (Requirement 5.6)
         console.error('[onNewUserSignup] Non-blocking error during signup check:', err)

@@ -658,7 +658,12 @@ export default function PaymentsPage() {
             {/* ── Credit Usage History ── */}
             <motion.div variants={fadeUp} className="max-w-3xl pb-8">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-sm font-semibold">Credit Usage</h2>
+                    <div className="space-y-0.5">
+                        <h2 className="text-sm font-semibold">Credit Usage</h2>
+                        {planType === 'free' && (
+                            <p className="text-[11px] text-muted-foreground/60">Credits are only available on the Pro plan.</p>
+                        )}
+                    </div>
                     <button
                         onClick={handleShowCreditHistory}
                         className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"

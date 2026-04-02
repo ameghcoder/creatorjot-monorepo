@@ -18,8 +18,8 @@ const ALLOWED_ORIGINS = [
   "http://localhost:3003",
   "https://creatorjot.com",
   "https://www.creatorjot.com",
-  "https://semidecadently-nonmountainous-dorinda.ngrok-free.dev"
-];
+  process.env.FRONTEND_URL,                          // Railway frontend domain via env var
+].filter(Boolean) as string[];
 
 app.use(
   cors({

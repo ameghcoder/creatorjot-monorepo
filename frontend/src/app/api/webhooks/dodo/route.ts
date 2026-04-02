@@ -27,6 +27,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { dodoClient } from '@/server/dodopayments/server-dodoclient'
 import { supabaseAdminClient } from '@/server/supabase/supabase-admin'
 import { downgradeUserToFree } from '@/lib/subscription/downgrade'
+import { Resend } from 'resend'
+import { proWelcomeEmail } from '@/lib/email-templates'
 import type { Subscription } from 'dodopayments/resources/subscriptions'
 import type { Payment } from 'dodopayments/resources/payments'
 import type { Refund } from 'dodopayments/resources/refunds'
@@ -35,6 +37,9 @@ import type { Dispute } from 'dodopayments/resources/disputes'
 if (!process.env.DODO_PAYMENTS_WEBHOOK_KEY) {
     console.warn('[dodo-webhook] WARNING: DODO_PAYMENTS_WEBHOOK_KEY is not set — webhook signature verification will fail')
 }
+
+// In test mode, log events but skip all DB writes that affect user plans/credits
+const IS_TEST_MODE = process.env.DODO_PAYMENTS_ENV === 'test_mode'
 
 export async function POST(req: NextRequest) {
     const bodyText = await req.text()
@@ -59,6 +64,10 @@ export async function POST(req: NextRequest) {
         case 'payment.failed':
         case 'payment.processing':
         case 'payment.cancelled': {
+            if (IS_TEST_MODE) {
+                console.log(`[dodo-webhook][TEST MODE] Skipping DB write for ${event.type}`)
+                break
+            }
             await handlePaymentEvent(supabase, event.data as Payment, event.type)
             break
         }
@@ -72,6 +81,10 @@ export async function POST(req: NextRequest) {
         case 'subscription.failed':
         case 'subscription.cancelled':
         case 'subscription.expired': {
+            if (IS_TEST_MODE) {
+                console.log(`[dodo-webhook][TEST MODE] Skipping DB write for ${event.type}`)
+                break
+            }
             await handleSubscriptionEvent(supabase, event.data as Subscription, event.type)
             break
         }
@@ -79,6 +92,10 @@ export async function POST(req: NextRequest) {
         // ── Refund events ───────────────────────────────────────────────────────
         case 'refund.succeeded':
         case 'refund.failed': {
+            if (IS_TEST_MODE) {
+                console.log(`[dodo-webhook][TEST MODE] Skipping DB write for ${event.type}`)
+                break
+            }
             await handleRefundEvent(supabase, event.data as Refund, event.type)
             break
         }
@@ -91,6 +108,10 @@ export async function POST(req: NextRequest) {
         case 'dispute.expired':
         case 'dispute.lost':
         case 'dispute.accepted': {
+            if (IS_TEST_MODE) {
+                console.log(`[dodo-webhook][TEST MODE] Skipping DB write for ${event.type}`)
+                break
+            }
             await handleDisputeEvent(supabase, event.data as Dispute, event.type)
             break
         }
@@ -107,6 +128,41 @@ export async function POST(req: NextRequest) {
 type SupabaseAdmin = ReturnType<typeof supabaseAdminClient>
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+async function sendProWelcomeEmail(supabase: SupabaseAdmin, userId: string): Promise<void> {
+    const resendKey = process.env.RESEND_API_KEY
+    if (!resendKey) return
+    try {
+        const { data: authUser } = await supabase.auth.admin.getUserById(userId)
+        const email = authUser?.user?.email
+        if (!email) return
+
+        const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('full_name, credits_limit')
+            .eq('user_id', userId)
+            .single()
+
+        const { data: plan } = await supabase
+            .from('user_active_plan')
+            .select('credits_limit')
+            .eq('user_id', userId)
+            .single()
+
+        const name = profile?.full_name?.split(' ')[0] ?? 'there'
+        const credits = String(plan?.credits_limit ?? 120)
+
+        const resend = new Resend(resendKey)
+        await resend.emails.send({
+            from: process.env.EMAIL_FROM ?? 'CreatorJot <notifications@creatorjot.com>',
+            to: email,
+            subject: "You're on Pro — enjoy CreatorJot 🎉",
+            html: proWelcomeEmail({ name, credits }),
+        })
+    } catch (err) {
+        console.error('[dodo-webhook] Failed to send pro welcome email:', err)
+    }
+}
 
 /** Resolve user_id from dodo_customer_id stored in user_profiles */
 async function resolveUserIdByCustomer(
@@ -358,6 +414,9 @@ async function handleSubscriptionEvent(
                     p_payment_status: 'active',
                 })
                 if (error) console.error(`[dodo-webhook][${eventType}] set_user_plan failed:`, error)
+
+                // Send pro welcome email (fire-and-forget)
+                sendProWelcomeEmail(supabase, userId).catch(() => {})
             }
 
             if (eventType === 'subscription.renewed') {

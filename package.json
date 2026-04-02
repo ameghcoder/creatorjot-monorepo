@@ -10,6 +10,14 @@
         "build": "pnpm build:shared && pnpm build:backend && pnpm build:frontend",
         "type-check": "pnpm --filter backend type-check && pnpm --filter frontend exec tsc --noEmit"
     },
+    "pnpm": {
+        "peerDependencyRules": {
+            "ignoreMissing": [],
+            "allowedVersions": {
+                "@sentry/nextjs>next": "16"
+            }
+        }
+    },
     "devDependencies": {
         "typescript": "^6.0.2"
     }

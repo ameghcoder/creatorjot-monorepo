@@ -6,6 +6,8 @@ import { Resend } from "resend";
 import { logger } from "../lib/logger.js";
 import { supabase } from "../lib/supabase.js";
 import { env } from "../utils/env.js";
+import { load, fill } from "../lib/fs-ops.js";
+import { TEMPLATES_MAP } from "../lib/template-path-map.js";
 import type {
   EmailNotificationData,
   EmailTemplate,
@@ -25,6 +27,7 @@ interface BatchedEmail {
   }>;
   scheduledAt: Date;
 }
+
 
 export class EmailClient {
   private resend: Resend | null = null;
@@ -214,18 +217,17 @@ export class EmailClient {
   // ── Templates ────────────────────────────────────────────
 
   private getJobCompletedTemplate(data: EmailTemplateData): EmailTemplate {
-    const name = this.platformName(data.platform);
+    const name = this.platformName(data.platform)
+    const html = fill(load(TEMPLATES_MAP.EMAIL_GEN_COMPLETE), {
+      name: 'there',
+      platform: name,
+      content_url: data.contentUrl ?? 'https://creatorjot.com/dashboard',
+      video_title: '',
+    })
     return {
-      subject: "Your content is ready 🎉",
-      body: `<html><body style="font-family:Arial,sans-serif;color:#333;line-height:1.6">
-        <div style="max-width:600px;margin:0 auto;padding:20px">
-          <h2 style="color:#4CAF50">Your ${name} content is ready 🎉</h2>
-          <p>Generated on ${new Date(data.timestamp).toLocaleString()}</p>
-          <p><strong>Job ID:</strong> ${data.jobId}</p>
-          <a href="${data.contentUrl}" style="display:inline-block;background:#4CAF50;color:#fff;padding:12px 24px;text-decoration:none;border-radius:5px;margin:20px 0">View Content</a>
-          <p style="color:#666;font-size:14px">The CreatorJot Team</p>
-        </div></body></html>`,
-    };
+      subject: `Your ${name} post is ready ✓`,
+      body: html,
+    }
   }
 
   private getJobFailedTemplate(data: EmailTemplateData): EmailTemplate {
