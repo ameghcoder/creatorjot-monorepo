@@ -16,9 +16,13 @@ import { onNewUserSignup } from '@/lib/billing/account-deletion'
  * HTTP-only cookies from a Route Handler.
  */
 export async function GET(request: NextRequest) {
-    const { searchParams, origin } = new URL(request.url)
+    const { searchParams } = new URL(request.url)
     const code = searchParams.get('code')
     const next = searchParams.get('next') ?? '/onboarding'
+
+    // Use NEXT_PUBLIC_SITE_URL to avoid resolving to the internal host
+    // (e.g. localhost:8080) when running behind a reverse proxy in production.
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin
 
     if (code) {
         const supabase = await createServerSupabaseClient()
@@ -33,17 +37,17 @@ export async function GET(request: NextRequest) {
             }
 
             // Session is now set in cookies — redirect to dashboard
-            return NextResponse.redirect(new URL(next, origin))
+            return NextResponse.redirect(new URL(next, siteUrl))
         }
 
         // Exchange failed — redirect to login with error
-        const loginUrl = new URL('/auth/login', origin)
+        const loginUrl = new URL('/auth/login', siteUrl)
         loginUrl.searchParams.set('error', 'exchange_failed')
         return NextResponse.redirect(loginUrl)
     }
 
     // No code param — redirect to login
-    const loginUrl = new URL('/auth/login', origin)
+    const loginUrl = new URL('/auth/login', siteUrl)
     loginUrl.searchParams.set('error', 'missing_code')
     return NextResponse.redirect(loginUrl)
 }
