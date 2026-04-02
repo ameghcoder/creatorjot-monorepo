@@ -6,8 +6,11 @@ import { Resend } from "resend";
 import { logger } from "../lib/logger.js";
 import { supabase } from "../lib/supabase.js";
 import { env } from "../utils/env.js";
-import { load, fill } from "../lib/fs-ops.js";
-import { TEMPLATES_MAP } from "../lib/template-path-map.js";
+import {
+  TEMPLATE_GEN_COMPLETE,
+  TEMPLATE_GEN_FAILED,
+  TEMPLATE_BATCH_COMPLETE,
+} from "../lib/email-template-strings.js";
 import type {
   EmailNotificationData,
   EmailTemplate,
@@ -15,6 +18,14 @@ import type {
   UserNotificationPreferences,
 } from "./types.js";
 import type { Platforms } from "../types/index.js";
+
+// ── Template variable replacement ────────────────────────────────────────────
+
+function fillTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{([A-Z0-9_]+)\}\}/g, (_, key) => vars[key] ?? "");
+}
+
+// ── Types ────────────────────────────────────────────────────────────────────
 
 interface BatchedEmail {
   userId: string;
@@ -28,6 +39,7 @@ interface BatchedEmail {
   scheduledAt: Date;
 }
 
+// ── Class ────────────────────────────────────────────────────────────────────
 
 export class EmailClient {
   private resend: Resend | null = null;
@@ -44,7 +56,6 @@ export class EmailClient {
 
     this.resend = new Resend(env.RESEND_API_KEY);
 
-    // Process batched emails every minute
     this.batchInterval = setInterval(() => {
       this.processBatchedEmails();
     }, 60_000);
@@ -202,8 +213,8 @@ export class EmailClient {
 
   private getContentUrl(generationId?: string): string {
     return generationId
-      ? `https://app.creatorjot.com/generations/${generationId}`
-      : "https://app.creatorjot.com/generations";
+      ? `https://creatorjot.com/dashboard/generations/${generationId}`
+      : "https://creatorjot.com/dashboard";
   }
 
   private platformName(platform?: string): string {
@@ -217,50 +228,46 @@ export class EmailClient {
   // ── Templates ────────────────────────────────────────────
 
   private getJobCompletedTemplate(data: EmailTemplateData): EmailTemplate {
-    const name = this.platformName(data.platform)
-    const html = fill(load(TEMPLATES_MAP.EMAIL_GEN_COMPLETE), {
-      name: 'there',
-      platform: name,
-      content_url: data.contentUrl ?? 'https://creatorjot.com/dashboard',
-      video_title: '',
-    })
+    const platform = this.platformName(data.platform);
     return {
-      subject: `Your ${name} post is ready ✓`,
-      body: html,
-    }
+      subject: `Your ${platform} post is ready`,
+      body: fillTemplate(TEMPLATE_GEN_COMPLETE, {
+        NAME: "there",
+        PLATFORM: platform,
+        CONTENT_URL: data.contentUrl ?? "https://creatorjot.com/dashboard",
+      }),
+    };
   }
 
   private getJobFailedTemplate(data: EmailTemplateData): EmailTemplate {
-    const name = this.platformName(data.platform);
+    const platform = this.platformName(data.platform);
     return {
       subject: "Content generation failed",
-      body: `<html><body style="font-family:Arial,sans-serif;color:#333;line-height:1.6">
-        <div style="max-width:600px;margin:0 auto;padding:20px">
-          <h2 style="color:#f44336">Content Generation Failed</h2>
-          <p>We encountered an issue generating your ${name} content.</p>
-          <div style="background:#fff3cd;padding:15px;border-radius:5px;border-left:4px solid #ffc107;margin:20px 0">
-            <strong>Error:</strong> ${data.errorMessage}
-          </div>
-          <p><strong>Job ID:</strong> ${data.jobId} &nbsp;|&nbsp; <strong>Time:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
-          <p>Please try again or contact <a href="mailto:support@creatorjot.com">support@creatorjot.com</a></p>
-          <p style="color:#666;font-size:14px">The CreatorJot Team</p>
-        </div></body></html>`,
+      body: fillTemplate(TEMPLATE_GEN_FAILED, {
+        PLATFORM: platform,
+        ERROR_MESSAGE: data.errorMessage ?? "An unexpected error occurred.",
+        JOB_ID: data.jobId ?? "",
+        TIMESTAMP: new Date(data.timestamp).toLocaleString(),
+      }),
     };
   }
 
   private getBatchCompletedTemplate(batch: BatchedEmail): EmailTemplate {
     const items = batch.jobs
-      .map((j) => `<li><strong>${this.platformName(j.platform)}</strong> — <a href="${this.getContentUrl(j.generationId)}">View</a></li>`)
+      .map((j) =>
+        `<li style="padding:10px 0;border-bottom:1px solid #e4e4e7;">` +
+        `<strong>${this.platformName(j.platform)}</strong> — ` +
+        `<a href="${this.getContentUrl(j.generationId)}" style="color:#13295f;text-decoration:underline;">View post</a>` +
+        `</li>`
+      )
       .join("");
+
     return {
-      subject: `${batch.jobs.length} pieces of content are ready 🎉`,
-      body: `<html><body style="font-family:Arial,sans-serif;color:#333;line-height:1.6">
-        <div style="max-width:600px;margin:0 auto;padding:20px">
-          <h2 style="color:#4CAF50">${batch.jobs.length} pieces of content ready 🎉</h2>
-          <ul style="list-style:none;padding:0">${items}</ul>
-          <a href="https://app.creatorjot.com/generations" style="display:inline-block;background:#4CAF50;color:#fff;padding:12px 24px;text-decoration:none;border-radius:5px;margin:20px 0">View All</a>
-          <p style="color:#666;font-size:14px">The CreatorJot Team</p>
-        </div></body></html>`,
+      subject: `${batch.jobs.length} pieces of content are ready`,
+      body: fillTemplate(TEMPLATE_BATCH_COMPLETE, {
+        JOB_COUNT: String(batch.jobs.length),
+        JOB_ITEMS: items,
+      }),
     };
   }
 }

@@ -94,11 +94,13 @@ export default function DashboardPage() {
                     .select('id', { count: 'exact', head: true })
                     .eq('user_id', user!.id)
 
-                // Unique videos (distinct yt_id via payloads)
-                const { count: videosCount } = await supabase
+                // Unique videos — fetch all yt_id values and deduplicate client-side
+                // (Supabase count: 'exact' counts rows, not distinct values)
+                const { data: payloadRows } = await supabase
                     .from('payloads')
-                    .select('yt_id', { count: 'exact', head: true })
+                    .select('yt_id')
                     .eq('user_id', user!.id)
+                const videosCount = new Set((payloadRows ?? []).map(r => r.yt_id).filter(Boolean)).size
 
                 setStats({
                     generations: generationsCount ?? 0,

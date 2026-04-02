@@ -287,7 +287,6 @@ export default function SessionPage() {
     const [initialLoading, setInitialLoading] = useState(true)
 
     const feedRef = useRef<HTMLDivElement>(null)
-    const hasBootstrapped = useRef(false)
     const ytIdRef = useRef<string | null>(null)
 
     // ── Scroll to bottom ──
@@ -327,9 +326,6 @@ export default function SessionPage() {
 
     // ── Bootstrap: load session + trigger initial generation if needed ──
     useEffect(() => {
-        if (hasBootstrapped.current) return
-        hasBootstrapped.current = true
-
         async function bootstrap() {
             const data = await fetchSession()
             setInitialLoading(false)
