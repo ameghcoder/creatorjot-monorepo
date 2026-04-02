@@ -40,14 +40,11 @@ export class QueueManager {
         retentionDays: config.retentionDays,
         maintenanceIntervalSeconds: config.maintenanceIntervalSeconds,
         deleteAfterDays: config.deleteAfterDays,
-        // Force IPv4 — Railway resolves Supabase hostnames to IPv6 by default
-        // which is unreachable. family:4 tells pg to only use IPv4 addresses.
-        db: {
-          connectionString: config.connectionString,
-          ssl: { rejectUnauthorized: false },
-          family: 4,
-        } as any,
-      });
+        // Force IPv4 and SSL — Railway resolves Supabase hostnames to IPv6
+        // by default which is unreachable. These are top-level pg-boss options.
+        ssl: { rejectUnauthorized: false },
+        application_name: "creatorjot-pgboss",
+      } as any);
 
       await this.boss.start();
       this.isInitialized = true;
