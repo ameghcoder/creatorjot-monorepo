@@ -149,6 +149,25 @@ export class ErrorHandler {
       };
     }
 
+    // AI provider quota / rate-limit errors (Gemini RPD, Anthropic 429-style messages)
+    // These are permanent for the current job — retrying immediately won't help.
+    const msg = error.message?.toLowerCase() ?? "";
+    if (
+      msg.includes("resource_exhausted") ||
+      msg.includes("quota") ||
+      msg.includes("rate limit") ||
+      msg.includes("ratelimit") ||
+      msg.includes("too many requests") ||
+      msg.includes("rpd") ||
+      msg.includes("daily limit")
+    ) {
+      return {
+        type: "permanent",
+        shouldRetry: false,
+        reason: "quota_exceeded",
+      };
+    }
+
     // Default to transient for unknown errors
     return {
       type: "transient",
