@@ -432,7 +432,6 @@ export class GenerationWorker {
     await this.errorHandler.handleJobError(
       { ...job, type: "generation", queue: QUEUE_NAMES.GENERATION },
       error,
-      this.workerId
     );
   }
 }

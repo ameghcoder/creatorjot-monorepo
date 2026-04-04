@@ -442,7 +442,6 @@ export class TranscriptWorker {
         queue: QUEUE_NAMES.TRANSCRIPT,
       },
       error,
-      this.workerId
     );
   }
 

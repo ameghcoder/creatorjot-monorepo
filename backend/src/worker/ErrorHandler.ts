@@ -190,7 +190,6 @@ export class ErrorHandler {
   async handleJobError(
     job: BaseJob & { type: "transcript" | "generation"; queue: string },
     error: Error,
-    workerId: string
   ): Promise<void> {
     const classification = this.classify(error);
 
@@ -226,11 +225,14 @@ export class ErrorHandler {
       // Update job for retry
       await this.updateJobForRetry(job, error, newAttempts, classification);
 
-      // Re-publish to queue with delay
-      // pg-boss startAfter accepts seconds (number) or a Date — convert ms → seconds
+      // Re-publish to queue with delay.
+      // IMPORTANT: spread the updated attempts count into the payload so the
+      // next dequeue sees the correct value — pg-boss does not mutate job.data,
+      // so without this the counter stays at 0 on every retry and MAX_ATTEMPTS
+      // is never reached.
       await queueManager.publish(
         job.queue,
-        job,  // re-publish the full job payload so all fields are available on retry
+        { ...job, attempts: newAttempts },
         {
           startAfter: Math.ceil(delay / 1000),
           priority: job.priority,

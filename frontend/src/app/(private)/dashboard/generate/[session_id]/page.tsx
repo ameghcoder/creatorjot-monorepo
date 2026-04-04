@@ -288,6 +288,7 @@ export default function SessionPage() {
 
     const feedRef = useRef<HTMLDivElement>(null)
     const ytIdRef = useRef<string | null>(null)
+    const pollRef = useRef<NodeJS.Timeout | null>(null)
 
     // ── Scroll to bottom ──
     const scrollToBottom = useCallback(() => {
@@ -308,6 +309,35 @@ export default function SessionPage() {
             // silent
         }
     }, [sessionId])
+
+    // ── Polling fallback (SSE disconnect safety net) ──────
+    // If SSE drops mid-generation the button would stay locked forever.
+    // Poll every 5s while generating; clear lock once nothing is in-flight.
+    const stopPolling = useCallback(() => {
+        if (pollRef.current) {
+            clearInterval(pollRef.current)
+            pollRef.current = null
+        }
+    }, [])
+
+    const startPolling = useCallback(() => {
+        stopPolling()
+        pollRef.current = setInterval(async () => {
+            const data = await fetchSession()
+            const stillInFlight = data?.payloads.some(p =>
+                p.generations.some(g => g.status === 'pending' || g.status === 'processing')
+            )
+            // Also consider transcript still processing: yt_id set but no payloads yet
+            const transcriptInFlight = !!data?.yt_id && data.payloads.length === 0
+            if (!stillInFlight && !transcriptInFlight) {
+                setGenerating(false)
+                stopPolling()
+            }
+        }, 5000)
+    }, [fetchSession, stopPolling])
+
+    // Clear poll on unmount
+    useEffect(() => () => stopPolling(), [stopPolling])
 
     // ── Fetch hooks for the video ──
     const fetchHooks = useCallback(async (ytId: string) => {
@@ -343,6 +373,19 @@ export default function SessionPage() {
                 fetchHooks(data.yt_id)
             }
 
+            // If any generations are still in-flight (e.g. user refreshed or
+            // navigated away mid-generation), lock the generate button so they
+            // can't queue duplicate jobs. Also covers the case where the transcript
+            // is still processing (yt_id set but no payloads yet).
+            const hasInFlight = data.payloads.some(p =>
+                p.generations.some(g => g.status === 'pending' || g.status === 'processing')
+            )
+            const transcriptInFlight = !!data.yt_id && data.payloads.length === 0
+            if (hasInFlight || transcriptInFlight) {
+                setGenerating(true)
+                startPolling()
+            }
+
             // Check if we have pending gen params from the entry page
             const stored = sessionStorage.getItem(`gen_params_${sessionId}`)
             if (stored) {
@@ -372,15 +415,31 @@ export default function SessionPage() {
     useJobNotifications(async (event) => {
         if (event.type === 'job_completed' && event.sessionId === sessionId) {
             setPendingJobs(prev => prev.filter(j => j.jobId !== event.jobId))
-            await fetchSession()
+            const updated = await fetchSession()
             scrollToBottom()
             // Fetch hooks after first completion if not yet loaded
             if (hooks.length === 0 && ytIdRef.current) {
                 fetchHooks(ytIdRef.current)
             }
+            // Clear generating lock if nothing is in-flight anymore
+            const stillInFlight = updated?.payloads.some(p =>
+                p.generations.some(g => g.status === 'pending' || g.status === 'processing')
+            )
+            if (!stillInFlight) {
+                setGenerating(false)
+                stopPolling()
+            }
         }
         if (event.type === 'job_failed' && event.sessionId === sessionId) {
             setPendingJobs(prev => prev.filter(j => j.jobId !== event.jobId))
+            const updated = await fetchSession()
+            const stillInFlight = updated?.payloads.some(p =>
+                p.generations.some(g => g.status === 'pending' || g.status === 'processing')
+            )
+            if (!stillInFlight) {
+                setGenerating(false)
+                stopPolling()
+            }
             toast.error('A generation failed. Please try again.')
         }
     })
@@ -415,6 +474,8 @@ export default function SessionPage() {
 
             if (!res.ok) {
                 toast.error(result.error ?? 'Generation failed.')
+                setGenerating(false)
+                stopPolling()
                 return
             }
 
@@ -437,6 +498,9 @@ export default function SessionPage() {
 
             setPendingJobs(prev => [...prev, ...newPending])
 
+            // Start polling fallback in case SSE disconnects before jobs complete
+            startPolling()
+
             // Refresh session to show the new payload in the feed
             await fetchSession()
 
@@ -447,8 +511,8 @@ export default function SessionPage() {
             scrollToBottom()
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'Something went wrong.')
-        } finally {
             setGenerating(false)
+            stopPolling()
         }
     }
 

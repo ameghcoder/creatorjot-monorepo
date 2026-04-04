@@ -35,6 +35,7 @@ export const env = {
   // ── External APIs ─────────────────────────────────────
   TRANSCRIPT_COM_API: process.env.TRANSCRIPT_COM_API ?? "",
   GEMINI_API_KEY: process.env.GEMINI_API_KEY ?? "",
+  GEMINI_API_KEY_2: process.env.GEMINI_API_KEY_2 ?? "",
   CLAUDE_API_KEY: process.env.CLAUDE_API_KEY ?? "",
 
   // ── Queue Configuration ───────────────────────────────
