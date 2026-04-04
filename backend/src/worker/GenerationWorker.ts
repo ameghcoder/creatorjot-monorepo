@@ -6,6 +6,7 @@ import { randomUUID } from "crypto";
 import { queueManager, QUEUE_NAMES } from "../queue/QueueManager.js";
 import { supabase } from "../lib/supabase.js";
 import { logger } from "../lib/logger.js";
+import { env } from "../utils/env.js";
 import { ErrorHandler } from "./ErrorHandler.js";
 import { aiService } from "../services/ai/AIService.js";
 import { waitForJobCompletion, setupShutdownHandlers } from "./workerUtils.js";
@@ -262,7 +263,7 @@ export class GenerationWorker {
         xPostFormat: job.xPostFormat,
       }, {
         userTier,
-        enableFallback: true,
+        enableFallback: env.MODEL_FALLBACK,
         forceModel: 'gemini'
       });
 

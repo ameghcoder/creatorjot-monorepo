@@ -69,6 +69,7 @@ export const env = {
 
   // ── AI Service Configuration ──────────────────────────
   AI_DEFAULT_MODEL: process.env.AI_DEFAULT_MODEL ?? "gemini",
+  MODEL_FALLBACK: process.env.MODEL_FALLBACK === "true",
   GEMINI_MODEL: process.env.GEMINI_MODEL ?? "gemini-1.5-flash",
   GEMINI_MAX_RETRIES: Number(process.env.GEMINI_MAX_RETRIES) || 3,
   GEMINI_TIMEOUT_MS: Number(process.env.GEMINI_TIMEOUT_MS) || 30000,
